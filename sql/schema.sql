@@ -26,18 +26,18 @@ CREATE TYPE event_organization_role AS ENUM (
 );
 
 CREATE TABLE person (
-    id serial
+    id serial unique,
     full_name varchar(255),
     email varchar(254) unique,
     phone_number_prefix varchar(5),
     phone_number varchar(15),
     phone_number_extension varchar(11),
-    password_digest bytes(16),
-    role role
+    password_digest bytea,
+    role person_role
 );
 
 CREATE TABLE organization (
-    id serial,
+    id serial unique,
     name varchar(255),
     description text,
     website varchar(2083),
@@ -70,7 +70,7 @@ CREATE TABLE organization_person_jct (
 );
 
 CREATE TABLE event (
-    id serial,
+    id serial unique,
     name varchar(255),
     theme varchar(255),
     description text
@@ -83,24 +83,24 @@ CREATE TABLE organizer (
 );
 
 CREATE TABLE event_organization_jct (
-    id serial,
+    id serial unique,
     event_id integer,
     organizer_id integer,
     role event_organization_role,
-    contacted_on datetime,
+    contacted_on timestamp,
     will_attend boolean
 );
 
 CREATE TABLE event_person_jct (
-    id serial,
+    id serial unique,
     event_id integer,
     organizer_id integer,
-    contacted_on datetime,
+    contacted_on timestamp,
     will_attend boolean
 );
 
 CREATE TABLE event_organization_annotations (
-    id serial,
+    id serial unique,
     author_id integer,
     event_organization_id integer,
     content text,
@@ -116,7 +116,7 @@ CREATE TABLE event_organization_annotations (
 );
 
 CREATE TABLE event_person_annotations (
-    id serial,
+    id serial unique,
     author_id integer,
     event_person_id integer,
     content text,
