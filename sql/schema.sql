@@ -33,20 +33,23 @@ CREATE TABLE person (
     phone_number varchar(15),
     phone_number_extension varchar(11),
     password_digest bytea,
-    role person_role
+    totp_secret bytea,
+    role person_role not null default 'disabled'
 );
 
 CREATE TABLE organization (
     id serial unique,
-    name varchar(255),
+    name varchar(255) not null,
     description text,
     website varchar(2083),
+    phone_number_prefix varchar(5),
     phone_number varchar(15)
+    phone_number_extension varchar(11),
 );
 
 CREATE TABLE organization_categories (
     organization_id integer,
-    category organization_category,
+    category organization_category unique,
     primary key(organization_id, category),
     constraint fk_organization_id
         foreign key(organization_id)
@@ -57,7 +60,7 @@ CREATE TABLE organization_categories (
 CREATE TABLE organization_person_jct (
     organization_id integer,
     person_id integer,
-    role organization_person_role,
+    role organization_person_role default 'read',
     primary key(organization_id, person_id),
     constraint fk_organization_id
         foreign key(organization_id)
@@ -71,7 +74,7 @@ CREATE TABLE organization_person_jct (
 
 CREATE TABLE event (
     id serial unique,
-    name varchar(255),
+    name varchar(255) not null,
     theme varchar(255),
     description text
 );
@@ -79,32 +82,61 @@ CREATE TABLE event (
 CREATE TABLE organizer (
     person_id integer,
     event_id integer,
-    role organizer_role
+    role organizer_role,
+    primary key (person_id, event_id),
+    constraint fk_person_id
+        foreign key(person_id)
+            references person(id)
+            on delete cascade,
+    constraint fk_event_id
+        foreign key(event_id)
+            references event(id)
+            on delete cascade
 );
 
 CREATE TABLE event_organization_jct (
     id serial unique,
-    event_id integer,
-    organizer_id integer,
+    event_id integer not null,
+    organization_id integer not null,
     role event_organization_role,
     contacted_on timestamp,
-    will_attend boolean
+    will_attend boolean default false,
+    primary key(event_id, organization_id),
+    constraint event_organization_unique unique (event_id, organization_id),
+    constraint fk_event_id
+        foreign key(event_id)
+            references event(id)
+            on delete cascade,
+    constraint fk_organization_id
+        foreign key(organization_id)
+            references organization(id)
+            on delete cascade
 );
 
 CREATE TABLE event_person_jct (
     id serial unique,
-    event_id integer,
-    organizer_id integer,
+    event_id integer not null,
+    person_id integer not null,
     contacted_on timestamp,
-    will_attend boolean
+    will_attend boolean default false,
+    primary key(event_id, person_id),
+    constraint event_person_unique unique (event_id, person_id),
+    constraint fk_event_id
+        foreign key(event_id)
+            references event(id)
+            on delete cascade,
+    constraint fk_person_id
+        foreign key(person_id)
+            references person(id)
+            on delete cascade
 );
 
 CREATE TABLE event_organization_annotations (
     id serial unique,
-    author_id integer,
-    event_organization_id integer,
-    content text,
-    is_deleted boolean,
+    author_id integer not null,
+    event_organization_id integer not null,
+    content text not null,
+    is_deleted boolean default false,
     constraint fk_author_id
         foreign key(author_id)
             references person(id)
@@ -117,10 +149,10 @@ CREATE TABLE event_organization_annotations (
 
 CREATE TABLE event_person_annotations (
     id serial unique,
-    author_id integer,
-    event_person_id integer,
-    content text,
-    is_deleted boolean,
+    author_id integer not null,
+    event_person_id integer not null,
+    content text not null,
+    is_deleted boolean default false,
     constraint fk_person_id
         foreign key(author_id)
             references person(id)
